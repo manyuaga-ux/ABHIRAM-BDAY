@@ -2,6 +2,129 @@
    ABHIRAM — LVL 16  |  script.js
    ══════════════════════════════════════════ */
 
+// ══════════════════════════════════════════
+// SOUND ENGINE (Web Audio API — no files)
+// ══════════════════════════════════════════
+let audioCtx = null;
+
+function getAudio() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+
+// Generic tone player
+function playTone({ freq=440, type='square', gain=0.18, duration=0.08, attack=0.005, decay=0.05, detune=0 } = {}) {
+  try {
+    const ctx = getAudio();
+    const osc = ctx.createOscillator();
+    const env = ctx.createGain();
+    osc.connect(env);
+    env.connect(ctx.destination);
+    osc.type    = type;
+    osc.frequency.setValueAtTime(freq, ctx.currentTime);
+    osc.detune.setValueAtTime(detune, ctx.currentTime);
+    env.gain.setValueAtTime(0, ctx.currentTime);
+    env.gain.linearRampToValueAtTime(gain, ctx.currentTime + attack);
+    env.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + duration + decay);
+  } catch(e) {}
+}
+
+// Specific sound effects
+const SFX = {
+  // Typewriter key click
+  type: () => playTone({ freq: 800 + Math.random()*400, type:'square', gain:0.06, duration:0.04, attack:0.001 }),
+
+  // Boot line confirmed
+  bootOk: () => {
+    playTone({ freq:523, type:'square', gain:0.12, duration:0.06 });
+    setTimeout(() => playTone({ freq:659, type:'square', gain:0.12, duration:0.08 }), 60);
+  },
+
+  // Boot warning
+  bootWarn: () => {
+    playTone({ freq:220, type:'sawtooth', gain:0.15, duration:0.12 });
+    setTimeout(() => playTone({ freq:180, type:'sawtooth', gain:0.15, duration:0.18 }), 100);
+  },
+
+  // Loading bar tick
+  tick: () => playTone({ freq:1200, type:'square', gain:0.04, duration:0.03 }),
+
+  // XP bar fill (rising sweep)
+  xpTick: () => playTone({ freq: 300 + Math.random()*200, type:'sine', gain:0.07, duration:0.05 }),
+
+  // Level up fanfare
+  levelUp: () => {
+    const notes = [523, 659, 784, 1047];
+    notes.forEach((f, i) => setTimeout(() => playTone({ freq:f, type:'square', gain:0.18, duration:0.18, attack:0.01 }), i * 100));
+    setTimeout(() => playTone({ freq:1047, type:'square', gain:0.22, duration:0.4, attack:0.01 }), 450);
+  },
+
+  // Screen transition whoosh
+  whoosh: () => {
+    try {
+      const ctx = getAudio();
+      const buf = ctx.createBuffer(1, ctx.sampleRate * 0.12, ctx.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / data.length);
+      const src = ctx.createBufferSource();
+      const filt = ctx.createBiquadFilter();
+      const env  = ctx.createGain();
+      filt.type = 'bandpass';
+      filt.frequency.setValueAtTime(800, ctx.currentTime);
+      filt.frequency.linearRampToValueAtTime(3200, ctx.currentTime + 0.12);
+      filt.Q.value = 0.8;
+      env.gain.setValueAtTime(0.3, ctx.currentTime);
+      env.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
+      src.buffer = buf;
+      src.connect(filt);
+      filt.connect(env);
+      env.connect(ctx.destination);
+      src.start();
+    } catch(e) {}
+  },
+
+  // Achievement unlock
+  achieve: () => {
+    const notes = [784, 988, 1175];
+    notes.forEach((f, i) => setTimeout(() => playTone({ freq:f, type:'sine', gain:0.16, duration:0.14, attack:0.01 }), i * 80));
+  },
+
+  // Button click
+  click: () => playTone({ freq:660, type:'square', gain:0.1, duration:0.05, attack:0.001 }),
+
+  // Firework pop
+  pop: () => {
+    try {
+      const ctx = getAudio();
+      const buf = ctx.createBuffer(1, ctx.sampleRate * 0.15, ctx.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / data.length, 2);
+      const src  = ctx.createBufferSource();
+      const env  = ctx.createGain();
+      const filt = ctx.createBiquadFilter();
+      filt.type = 'lowpass';
+      filt.frequency.value = 1800;
+      env.gain.setValueAtTime(0.4, ctx.currentTime);
+      env.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+      src.buffer = buf;
+      src.connect(filt); filt.connect(env); env.connect(ctx.destination);
+      src.start();
+    } catch(e) {}
+  },
+
+  // Final birthday jingle
+  jingle: () => {
+    const melody = [523,523,587,523,698,659, 0, 523,523,587,523,784,698];
+    const timings = [0,250,500,750,1000,1250, 0, 1750,2000,2250,2500,2750,3000];
+    melody.forEach((f, i) => {
+      if (f === 0) return;
+      setTimeout(() => playTone({ freq:f, type:'triangle', gain:0.2, duration:0.22, attack:0.01 }), timings[i]);
+    });
+  },
+};
+
 // ── BIRTHDAY (change to actual date if known) ──────────────────
 const BDAY = new Date('2009-06-10T00:00:00');
 
@@ -15,6 +138,7 @@ function goTo(name) {
   if (el) {
     el.classList.add('active');
     currentScreen = screens.indexOf(name);
+    if (name !== 'boot') SFX.whoosh();
   }
 }
 
@@ -33,6 +157,7 @@ function typeBootLine(el, text, cb) {
   let i = 0;
   const iv = setInterval(() => {
     el.textContent = text.slice(0, ++i);
+    SFX.type();
     if (i >= text.length) { clearInterval(iv); if(cb) cb(); }
   }, 28);
 }
@@ -44,7 +169,11 @@ function runBoot() {
       setTimeout(() => {
         const el = document.getElementById(id);
         if (cls) el.classList.add(cls);
-        typeBootLine(el, text, res);
+        typeBootLine(el, text, () => {
+          if (cls === 'ok') SFX.bootOk();
+          if (cls === 'err') SFX.bootWarn();
+          setTimeout(res, 120);
+        });
       }, delay);
     }));
   });
@@ -59,6 +188,7 @@ function runBoot() {
         pct += Math.random() * 4 + 1;
         if (pct >= 100) { pct = 100; clearInterval(iv); setTimeout(() => startLevelUp(), 600); }
         bar.style.width = pct + '%';
+        SFX.tick();
       }, 60);
     }, 400);
   });
@@ -85,11 +215,16 @@ function startLevelUp() {
     const pct = (cur / XP_MAX) * 100;
     bar.style.width = pct + '%';
     xpV.textContent = Math.floor(cur).toLocaleString() + ' / ' + XP_MAX.toLocaleString();
-    if (cur >= target) clearInterval(iv);
+    if (Math.random() < 0.3) SFX.xpTick();
+    if (cur >= target) {
+      clearInterval(iv);
+      setTimeout(() => SFX.levelUp(), 200);
+    }
   }, 25);
 }
 
 document.getElementById('continueBtn').addEventListener('click', () => {
+  SFX.click();
   goTo('stats');
   loadStats();
 });
@@ -126,6 +261,7 @@ function animCount(el, target, duration) {
 function easeOut(t) { return 1 - Math.pow(1 - t, 3); }
 
 document.getElementById('statsNextBtn').addEventListener('click', () => {
+  SFX.click();
   goTo('lore');
   startLore();
 });
@@ -160,6 +296,7 @@ function startLore() {
   let i = 0;
   const iv = setInterval(() => {
     el.textContent = LORE_TEXT.slice(0, ++i);
+    if (LORE_TEXT[i-1] !== ' ' && LORE_TEXT[i-1] !== '\n') SFX.type();
     if (i >= LORE_TEXT.length) {
       clearInterval(iv);
       loreTyping = false;
@@ -182,6 +319,7 @@ function startLore() {
 }
 
 document.getElementById('loreNextBtn').addEventListener('click', () => {
+  SFX.click();
   goTo('achievements');
   loadAchievements();
 });
@@ -215,13 +353,16 @@ function loadAchievements() {
         <div class="ach-title">${a.unlocked ? '✓ ' : '🔒 '}${a.title}</div>
         <div class="ach-desc">${a.desc}</div>
       </div>`;
+    if (a.unlocked) setTimeout(() => SFX.achieve(), i * 70 + 100);
     grid.appendChild(card);
   });
 }
 
 document.getElementById('achNextBtn').addEventListener('click', () => {
+  SFX.click();
   goTo('finale');
   startFireworks();
+  setTimeout(() => SFX.jingle(), 400);
 });
 
 // ══════════════════════════════════════════
@@ -260,6 +401,7 @@ function startFireworks() {
         decay: Math.random() * 0.015 + 0.012,
       });
     }
+    SFX.pop();
     launchCount++;
     if (launchCount < 18) setTimeout(launchBurst, 350 + Math.random() * 400);
   }
@@ -293,6 +435,7 @@ function startFireworks() {
 // 7. REPLAY
 // ══════════════════════════════════════════
 document.getElementById('replayBtn').addEventListener('click', () => {
+  SFX.click();
   if (fwRaf) cancelAnimationFrame(fwRaf);
   fwParticles = [];
   if (fwCtx) fwCtx.clearRect(0, 0, fwCanvas.width, fwCanvas.height);
@@ -310,6 +453,22 @@ document.getElementById('replayBtn').addEventListener('click', () => {
 
   goTo('boot');
   runBoot();
+});
+
+// ── MUTE TOGGLE ───────────────────────────────────────────────
+let muted = false;
+const _playTone = playTone;
+const muteBtn = document.getElementById('muteBtn');
+muteBtn.addEventListener('click', () => {
+  muted = !muted;
+  muteBtn.textContent = muted ? '🔇' : '🔊';
+  if (audioCtx) muted ? audioCtx.suspend() : audioCtx.resume();
+});
+
+// Wrap SFX calls to respect mute
+Object.keys(SFX).forEach(k => {
+  const orig = SFX[k];
+  SFX[k] = (...args) => { if (!muted) orig(...args); };
 });
 
 // ══════════════════════════════════════════
