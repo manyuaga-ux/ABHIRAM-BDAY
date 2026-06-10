@@ -20,6 +20,16 @@
   --ff-body: 'Share Tech Mono', monospace;
 }
 
+/* ── MUTE BUTTON ── */
+.mute-btn {
+  position: fixed; top:16px; right:16px; z-index:1000;
+  background: var(--dim); border:1px solid var(--border);
+  color: var(--text); font-size:16px;
+  width:36px; height:36px; cursor:pointer;
+  transition: background 0.2s;
+}
+.mute-btn:hover { background: var(--border); }
+
 /* ── RESET ── */
 *, *::before, *::after { box-sizing: border-box; margin:0; padding:0; }
 html, body {
