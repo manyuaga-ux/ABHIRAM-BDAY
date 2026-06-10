@@ -1,82 +1,147 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Happy 16th, Abhiram!</title>
-  <link rel="stylesheet" href="style.css" />
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;600&display=swap" rel="stylesheet"/>
+  <title>ABHIRAM — LVL 16</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="style.css"/>
 </head>
 <body>
 
-  <!-- Particle Canvas -->
-  <canvas id="particles"></canvas>
+  <!-- SCANLINES OVERLAY -->
+  <div class="scanlines" aria-hidden="true"></div>
 
-  <!-- HERO -->
-  <section class="hero">
-    <div class="age-stamp">
-      <span class="age-num">16</span>
-      <span class="age-label">YEARS</span>
-    </div>
-    <div class="hero-text">
-      <p class="pre-title">H A P P Y &nbsp; B I R T H D A Y</p>
-      <h1 class="hero-name">Abhiram</h1>
-      <p class="hero-sub">The legend levels up today.</p>
-      <a href="#message" class="cta-btn">Read Your Message →</a>
-    </div>
-    <div class="scroll-hint">scroll ↓</div>
-  </section>
+  <!-- SCREEN FLICKER -->
+  <div class="flicker" aria-hidden="true"></div>
 
-  <!-- COUNTDOWN / DATE STAMP -->
-  <section class="milestone">
-    <div class="milestone-grid">
-      <div class="m-card">
-        <span class="m-num" id="days-alive">0</span>
-        <span class="m-label">Days Alive</span>
-      </div>
-      <div class="m-card accent">
-        <span class="m-num">16</span>
-        <span class="m-label">Candles</span>
-      </div>
-      <div class="m-card">
-        <span class="m-num" id="hours-alive">0</span>
-        <span class="m-label">Hours on Earth</span>
+  <!-- ════════════════════════════════════
+       BOOT SCREEN
+  ════════════════════════════════════ -->
+  <section class="screen active" id="screen-boot">
+    <div class="boot-wrap">
+      <p class="boot-line" id="bl1"></p>
+      <p class="boot-line" id="bl2"></p>
+      <p class="boot-line" id="bl3"></p>
+      <p class="boot-line" id="bl4"></p>
+      <p class="boot-line" id="bl5"></p>
+      <div class="boot-bar-wrap" id="boot-bar-wrap" style="display:none">
+        <span class="boot-bar-label">LOADING BIRTHDAY SEQUENCE</span>
+        <div class="boot-bar-outer"><div class="boot-bar-inner" id="bootBar"></div></div>
       </div>
     </div>
   </section>
 
-  <!-- MESSAGE -->
-  <section class="message" id="message">
-    <div class="msg-inner">
-      <p class="eyebrow">A message for you</p>
-      <blockquote class="msg-quote">
-        "Sixteen isn't just a number —<br/>
-        it's the version of you that starts<br/>
-        making the real moves."
-      </blockquote>
-      <p class="msg-body">
-        Today marks the day the world got a little louder, a little sharper, a little more interesting — because you showed up in it. Here's to the big goals, the late nights, the wins that are still coming, and the version of Abhiram that nobody's seen yet.
-      </p>
-      <p class="msg-sig">— With love &amp; good energy 🎉</p>
+  <!-- ════════════════════════════════════
+       LEVEL UP SCREEN
+  ════════════════════════════════════ -->
+  <section class="screen" id="screen-levelup">
+    <div class="lu-bg" aria-hidden="true">
+      <div class="lu-ring lu-r1"></div>
+      <div class="lu-ring lu-r2"></div>
+      <div class="lu-ring lu-r3"></div>
+    </div>
+    <div class="lu-content">
+      <p class="lu-eyebrow">PLAYER ONE</p>
+      <h1 class="lu-name glitch" data-text="ABHIRAM">ABHIRAM</h1>
+      <div class="lu-badge">
+        <span class="lu-prev">LVL 15</span>
+        <span class="lu-arrow">▶▶</span>
+        <span class="lu-next">LVL 16</span>
+      </div>
+      <div class="xp-section">
+        <div class="xp-label-row">
+          <span>XP</span><span id="xpVal">0 / 5840</span>
+        </div>
+        <div class="xp-bar-outer">
+          <div class="xp-bar-inner" id="xpBar"></div>
+          <div class="xp-shine"></div>
+        </div>
+      </div>
+      <button class="lu-btn" id="continueBtn">[ PRESS START ]</button>
     </div>
   </section>
 
-  <!-- WISHES TIMELINE -->
-  <section class="wishes">
-    <p class="eyebrow center">16 wishes for 16 years</p>
-    <div class="wish-track" id="wishTrack"></div>
+  <!-- ════════════════════════════════════
+       STATS SCREEN
+  ════════════════════════════════════ -->
+  <section class="screen" id="screen-stats">
+    <div class="stats-wrap">
+      <p class="screen-eyebrow">CHARACTER SHEET</p>
+      <div class="stats-grid">
+
+        <div class="stat-card" style="--delay:0s">
+          <div class="stat-icon">⚡</div>
+          <div class="stat-label">DAYS ALIVE</div>
+          <div class="stat-val" id="s-days">—</div>
+          <div class="stat-bar-outer"><div class="stat-bar-inner" id="sb-days" style="--w:88%"></div></div>
+        </div>
+
+        <div class="stat-card" style="--delay:0.1s">
+          <div class="stat-icon">🔥</div>
+          <div class="stat-label">HOURS OF GRIND</div>
+          <div class="stat-val" id="s-hours">—</div>
+          <div class="stat-bar-outer"><div class="stat-bar-inner" id="sb-hours" style="--w:94%"></div></div>
+        </div>
+
+        <div class="stat-card" style="--delay:0.2s">
+          <div class="stat-icon">🎯</div>
+          <div class="stat-label">LEVEL</div>
+          <div class="stat-val">16</div>
+          <div class="stat-bar-outer"><div class="stat-bar-inner" style="--w:100%; width:100%"></div></div>
+        </div>
+
+        <div class="stat-card" style="--delay:0.3s">
+          <div class="stat-icon">🧠</div>
+          <div class="stat-label">UNLOCKED TRAITS</div>
+          <div class="stat-val">∞</div>
+          <div class="stat-bar-outer"><div class="stat-bar-inner" style="--w:72%"></div></div>
+        </div>
+
+      </div>
+      <button class="lu-btn" id="statsNextBtn" style="margin-top:2rem">[ NEXT ]</button>
+    </div>
   </section>
 
-  <!-- INTERACTIVE CONFETTI BUTTON -->
-  <section class="celebrate">
-    <p class="celebrate-label">Hit it.</p>
-    <button class="blast-btn" id="blastBtn">🎂 Celebrate!</button>
+  <!-- ════════════════════════════════════
+       LORE / MESSAGE SCREEN
+  ════════════════════════════════════ -->
+  <section class="screen" id="screen-lore">
+    <div class="lore-wrap">
+      <p class="screen-eyebrow">STORY MODE</p>
+      <div class="lore-terminal">
+        <span class="lore-cursor" id="loreCursor">█</span>
+        <p class="lore-text" id="loreText"></p>
+      </div>
+      <button class="lu-btn" id="loreNextBtn" style="display:none; margin-top:2.5rem">[ CONTINUE ]</button>
+    </div>
   </section>
 
-  <!-- FOOTER -->
-  <footer>
-    <p>Made with 🔥 for Abhiram's 16th</p>
-  </footer>
+  <!-- ════════════════════════════════════
+       ACHIEVEMENTS SCREEN
+  ════════════════════════════════════ -->
+  <section class="screen" id="screen-achievements">
+    <div class="ach-wrap">
+      <p class="screen-eyebrow">ACHIEVEMENTS UNLOCKED</p>
+      <div class="ach-grid" id="achGrid"></div>
+      <button class="lu-btn" id="achNextBtn" style="margin-top:2rem">[ FINAL SCREEN ]</button>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════
+       FINALE SCREEN
+  ════════════════════════════════════ -->
+  <section class="screen" id="screen-finale">
+    <canvas id="fireworkCanvas"></canvas>
+    <div class="finale-wrap">
+      <p class="finale-top">HAPPY BIRTHDAY</p>
+      <h2 class="finale-name glitch" data-text="ABHIRAM">ABHIRAM</h2>
+      <p class="finale-sub">The world didn't know what it was missing.<br/>Now it does.</p>
+      <div class="finale-tagline">YEAR SIXTEEN BEGINS NOW.</div>
+      <button class="lu-btn replay-btn" id="replayBtn">[ PLAY AGAIN ]</button>
+    </div>
+  </section>
 
   <script src="script.js"></script>
 </body>
