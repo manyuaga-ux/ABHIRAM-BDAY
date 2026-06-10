@@ -1,158 +1,321 @@
-/* ============================================================
-   script.js — Abhiram's 16th Birthday Website
-   ============================================================ */
+/* ══════════════════════════════════════════
+   ABHIRAM — LVL 16  |  script.js
+   ══════════════════════════════════════════ */
 
-// ─── 1. PARTICLE CANVAS ────────────────────────────────────────
-const canvas = document.getElementById('particles');
-const ctx    = canvas.getContext('2d');
-let W, H, dots = [];
+// ── BIRTHDAY (change to actual date if known) ──────────────────
+const BDAY = new Date('2009-06-10T00:00:00');
 
-function resizeCanvas() {
-  W = canvas.width  = window.innerWidth;
-  H = canvas.height = window.innerHeight;
-}
+// ── SCREEN MANAGER ────────────────────────────────────────────
+const screens = ['boot','levelup','stats','lore','achievements','finale'];
+let currentScreen = 0;
 
-function randomDot() {
-  return {
-    x:  Math.random() * W,
-    y:  Math.random() * H,
-    r:  Math.random() * 1.4 + 0.3,
-    vx: (Math.random() - 0.5) * 0.3,
-    vy: (Math.random() - 0.5) * 0.3,
-    a:  Math.random() * 0.5 + 0.1,
-  };
-}
-
-function initDots() {
-  dots = Array.from({ length: 120 }, randomDot);
-}
-
-function drawDots() {
-  ctx.clearRect(0, 0, W, H);
-  for (const d of dots) {
-    ctx.beginPath();
-    ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(0,212,255,${d.a})`;
-    ctx.fill();
-
-    d.x += d.vx;
-    d.y += d.vy;
-    if (d.x < 0 || d.x > W) d.vx *= -1;
-    if (d.y < 0 || d.y > H) d.vy *= -1;
+function goTo(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const el = document.getElementById('screen-' + name);
+  if (el) {
+    el.classList.add('active');
+    currentScreen = screens.indexOf(name);
   }
-  requestAnimationFrame(drawDots);
 }
 
-resizeCanvas();
-initDots();
-drawDots();
-window.addEventListener('resize', () => { resizeCanvas(); initDots(); });
+// ══════════════════════════════════════════
+// 1. BOOT SEQUENCE
+// ══════════════════════════════════════════
+const BOOT_LINES = [
+  { id:'bl1', text:'SYSTEM INIT... BIRTHDAY_OS v16.0.0', cls:'ok', delay:200 },
+  { id:'bl2', text:'LOADING PLAYER DATA... [ABHIRAM.DAT]', cls:'ok', delay:800 },
+  { id:'bl3', text:'SCANNING MEMORY BANKS... 5840 DAYS FOUND', cls:'ok', delay:1600 },
+  { id:'bl4', text:'VERIFYING LEGEND STATUS... CONFIRMED', cls:'ok', delay:2400 },
+  { id:'bl5', text:'WARNING: MAXIMUM COOLNESS THRESHOLD EXCEEDED', cls:'err', delay:3200 },
+];
 
-
-// ─── 2. DAYS & HOURS ALIVE COUNTER ─────────────────────────────
-// Change this to Abhiram's actual birthdate if known
-const BIRTHDAY = new Date('2009-06-10T00:00:00');
-
-function updateCounters() {
-  const now     = new Date();
-  const diffMs  = now - BIRTHDAY;
-  const days    = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-  const hours   = Math.floor(diffMs / (1000 * 60 * 60));
-
-  const dEl = document.getElementById('days-alive');
-  const hEl = document.getElementById('hours-alive');
-
-  animateCounter(dEl, days);
-  animateCounter(hEl, hours);
+function typeBootLine(el, text, cb) {
+  let i = 0;
+  const iv = setInterval(() => {
+    el.textContent = text.slice(0, ++i);
+    if (i >= text.length) { clearInterval(iv); if(cb) cb(); }
+  }, 28);
 }
 
-function animateCounter(el, target) {
-  let start = 0;
-  const duration = 1800;
-  const startTime = performance.now();
+function runBoot() {
+  let chain = Promise.resolve();
+  BOOT_LINES.forEach(({ id, text, cls, delay }) => {
+    chain = chain.then(() => new Promise(res => {
+      setTimeout(() => {
+        const el = document.getElementById(id);
+        if (cls) el.classList.add(cls);
+        typeBootLine(el, text, res);
+      }, delay);
+    }));
+  });
 
+  chain.then(() => {
+    setTimeout(() => {
+      const barWrap = document.getElementById('boot-bar-wrap');
+      barWrap.style.display = 'block';
+      const bar = document.getElementById('bootBar');
+      let pct = 0;
+      const iv = setInterval(() => {
+        pct += Math.random() * 4 + 1;
+        if (pct >= 100) { pct = 100; clearInterval(iv); setTimeout(() => startLevelUp(), 600); }
+        bar.style.width = pct + '%';
+      }, 60);
+    }, 400);
+  });
+}
+
+// ══════════════════════════════════════════
+// 2. LEVEL UP SCREEN
+// ══════════════════════════════════════════
+const XP_MAX = 5840; // days alive approx
+
+function startLevelUp() {
+  goTo('levelup');
+  const bar  = document.getElementById('xpBar');
+  const xpV  = document.getElementById('xpVal');
+
+  // Calculate real days
+  const daysAlive = Math.floor((new Date() - BDAY) / 86400000);
+  const target = Math.min(daysAlive, XP_MAX);
+
+  let cur = 0;
+  const step = target / 120;
+  const iv = setInterval(() => {
+    cur = Math.min(cur + step, target);
+    const pct = (cur / XP_MAX) * 100;
+    bar.style.width = pct + '%';
+    xpV.textContent = Math.floor(cur).toLocaleString() + ' / ' + XP_MAX.toLocaleString();
+    if (cur >= target) clearInterval(iv);
+  }, 25);
+}
+
+document.getElementById('continueBtn').addEventListener('click', () => {
+  goTo('stats');
+  loadStats();
+});
+
+// ══════════════════════════════════════════
+// 3. STATS SCREEN
+// ══════════════════════════════════════════
+function loadStats() {
+  const now = new Date();
+  const days  = Math.floor((now - BDAY) / 86400000);
+  const hours = Math.floor((now - BDAY) / 3600000);
+
+  animCount(document.getElementById('s-days'),  days,  1600);
+  animCount(document.getElementById('s-hours'), hours, 1800);
+
+  // Animate stat bars
+  setTimeout(() => {
+    document.querySelectorAll('.stat-bar-inner').forEach(b => {
+      b.style.width = b.style.getPropertyValue('--w') || '80%';
+    });
+  }, 200);
+}
+
+function animCount(el, target, duration) {
+  const start = performance.now();
   function step(now) {
-    const elapsed  = now - startTime;
-    const progress = Math.min(elapsed / duration, 1);
-    const eased    = 1 - Math.pow(1 - progress, 3);
-    el.textContent = Math.floor(eased * target).toLocaleString();
-    if (progress < 1) requestAnimationFrame(step);
+    const p = Math.min((now - start) / duration, 1);
+    el.textContent = Math.floor(easeOut(p) * target).toLocaleString();
+    if (p < 1) requestAnimationFrame(step);
   }
   requestAnimationFrame(step);
 }
 
-// Run after a brief delay so the page paints first
-setTimeout(updateCounters, 400);
+function easeOut(t) { return 1 - Math.pow(1 - t, 3); }
 
-
-// ─── 3. 16 WISHES ──────────────────────────────────────────────
-const WISHES = [
-  "Always trust your own gut — it's smarter than the crowd.",
-  "Chase the thing that makes time disappear.",
-  "Be the kind of person people are glad they met.",
-  "Stay curious. The moment you stop asking 'why', you stop growing.",
-  "Learn to lose well. It's the real cheat code.",
-  "Pick your circle carefully — energy is contagious.",
-  "Money can wait. Skills can't. Build both.",
-  "Disagree out loud when it matters. Silence is agreement.",
-  "Protect your sleep, your focus, and your time — in that order.",
-  "Read one book a month. You'll outthink 90% of the room.",
-  "Travel somewhere that challenges you, not just comforts you.",
-  "Tell the people you care about that you care — before it's too late.",
-  "Fail faster. Every mistake is just paid tuition.",
-  "Master one thing deeply. Generalists are common; experts are rare.",
-  "Keep a journal. Your future self will thank you.",
-  "Enjoy being 16. This exact version of you only exists once.",
-];
-
-const track = document.getElementById('wishTrack');
-
-WISHES.forEach((text, i) => {
-  const card = document.createElement('div');
-  card.className = 'wish-card';
-  card.style.animationDelay = `${i * 0.06}s`;
-  card.innerHTML = `
-    <span class="wish-num">${String(i + 1).padStart(2, '0')}</span>
-    <span class="wish-text">${text}</span>
-  `;
-  track.appendChild(card);
+document.getElementById('statsNextBtn').addEventListener('click', () => {
+  goTo('lore');
+  startLore();
 });
 
+// ══════════════════════════════════════════
+// 4. LORE / MESSAGE SCREEN
+// ══════════════════════════════════════════
+const LORE_TEXT =
+`Sixteen years ago, something irreversible happened.
 
-// ─── 4. CONFETTI BLAST ─────────────────────────────────────────
-const COLORS  = ['#f5a623', '#00d4ff', '#ff6b35', '#ffffff', '#a855f7', '#22c55e'];
+You showed up.
 
-function launchConfetti(count = 120) {
-  for (let i = 0; i < count; i++) {
-    const piece = document.createElement('div');
-    piece.className = 'confetti-piece';
+And the world, without knowing it, started running a different version of itself — one with you in it. A louder version. A smarter one. One that asks harder questions and refuses to settle for the obvious answer.
 
-    const x        = Math.random() * 100;
-    const size     = Math.random() * 10 + 6;
-    const duration = Math.random() * 2 + 2;
-    const delay    = Math.random() * 0.8;
-    const color    = COLORS[Math.floor(Math.random() * COLORS.length)];
-    const rotation = Math.random() * 360;
+Sixteen isn't a milestone you reach. It's one you earn. Every late night, every thing you pushed through, every time you bet on yourself when nobody else was watching — that's the XP that got you here.
 
-    piece.style.cssText = `
-      left: ${x}vw;
-      width: ${size}px;
-      height: ${size}px;
-      background: ${color};
-      transform: rotate(${rotation}deg);
-      animation-duration: ${duration}s;
-      animation-delay: ${delay}s;
-      border-radius: ${Math.random() > 0.5 ? '50%' : '2px'};
-    `;
+The level isn't the destination. It never was.
 
-    document.body.appendChild(piece);
-    piece.addEventListener('animationend', () => piece.remove());
-  }
+It's just proof you survived everything before it.
+
+Happy Birthday, Abhiram.
+Now go break something worth breaking.`;
+
+let loreTyping = false;
+
+function startLore() {
+  const el = document.getElementById('loreText');
+  const btn = document.getElementById('loreNextBtn');
+  el.textContent = '';
+  loreTyping = true;
+
+  let i = 0;
+  const iv = setInterval(() => {
+    el.textContent = LORE_TEXT.slice(0, ++i);
+    if (i >= LORE_TEXT.length) {
+      clearInterval(iv);
+      loreTyping = false;
+      document.getElementById('loreCursor').style.display = 'none';
+      btn.style.display = 'inline-block';
+    }
+  }, 22);
+
+  // Click to skip
+  document.getElementById('lore-skip-hint');
+  el.addEventListener('click', () => {
+    if (loreTyping) {
+      clearInterval(iv);
+      el.textContent = LORE_TEXT;
+      loreTyping = false;
+      document.getElementById('loreCursor').style.display = 'none';
+      btn.style.display = 'inline-block';
+    }
+  }, { once: true });
 }
 
-document.getElementById('blastBtn').addEventListener('click', () => {
-  launchConfetti(160);
+document.getElementById('loreNextBtn').addEventListener('click', () => {
+  goTo('achievements');
+  loadAchievements();
 });
 
-// Auto-launch a small burst on load
-window.addEventListener('load', () => setTimeout(() => launchConfetti(60), 600));
+// ══════════════════════════════════════════
+// 5. ACHIEVEMENTS SCREEN
+// ══════════════════════════════════════════
+const ACHIEVEMENTS = [
+  { icon:'🌍', title:'BORN', desc:'Successfully entered the world. First attempt.',         unlocked:true  },
+  { icon:'🔤', title:'FIRST WORDS', desc:'Achieved basic verbal communication protocol.',   unlocked:true  },
+  { icon:'📚', title:'SCHOLAR', desc:'Survived 10+ years of academic levelling.',          unlocked:true  },
+  { icon:'🧩', title:'PROBLEM SOLVER', desc:'Found shortcuts nobody thought to try.',       unlocked:true  },
+  { icon:'🎯', title:'FOCUSED', desc:'Locked in when it actually mattered.',                unlocked:true  },
+  { icon:'🤝', title:'ALLY', desc:'Someone people can actually count on.',                  unlocked:true  },
+  { icon:'⚡', title:'QUICK THINKER', desc:'Replied before the question finished loading.', unlocked:true  },
+  { icon:'🏆', title:'LEGENDARY', desc:'Reached Level 16 without a walkthrough.',           unlocked:true  },
+  { icon:'🚀', title:'WHAT\'S NEXT', desc:'Unlock after Level 16. Something huge.',        unlocked:false },
+  { icon:'👑', title:'UNDISPUTED', desc:'Reserved. You\'ll know when you earn it.',        unlocked:false },
+];
+
+function loadAchievements() {
+  const grid = document.getElementById('achGrid');
+  grid.innerHTML = '';
+  ACHIEVEMENTS.forEach((a, i) => {
+    const card = document.createElement('div');
+    card.className = 'ach-card' + (a.unlocked ? '' : ' locked');
+    card.style.animationDelay = (i * 0.07) + 's';
+    card.innerHTML = `
+      <div class="ach-icon">${a.icon}</div>
+      <div class="ach-info">
+        <div class="ach-title">${a.unlocked ? '✓ ' : '🔒 '}${a.title}</div>
+        <div class="ach-desc">${a.desc}</div>
+      </div>`;
+    grid.appendChild(card);
+  });
+}
+
+document.getElementById('achNextBtn').addEventListener('click', () => {
+  goTo('finale');
+  startFireworks();
+});
+
+// ══════════════════════════════════════════
+// 6. FIREWORKS (FINALE)
+// ══════════════════════════════════════════
+let fwCanvas, fwCtx, fwParticles = [], fwRaf;
+
+function startFireworks() {
+  fwCanvas = document.getElementById('fireworkCanvas');
+  fwCtx    = fwCanvas.getContext('2d');
+
+  function resize() {
+    fwCanvas.width  = window.innerWidth;
+    fwCanvas.height = window.innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  fwParticles = [];
+  let launchCount = 0;
+
+  function launchBurst() {
+    const cx = Math.random() * fwCanvas.width;
+    const cy = Math.random() * fwCanvas.height * 0.6 + 40;
+    const colors = ['#00ff88','#ffb300','#00e5ff','#ff004c','#ffffff','#c8e6c8'];
+    const col = colors[Math.floor(Math.random() * colors.length)];
+    for (let i = 0; i < 70; i++) {
+      const angle = (Math.PI * 2 / 70) * i + Math.random() * 0.2;
+      const speed = Math.random() * 5 + 2;
+      fwParticles.push({
+        x:cx, y:cy,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        alpha:1, color:col,
+        size: Math.random() * 2.5 + 1,
+        decay: Math.random() * 0.015 + 0.012,
+      });
+    }
+    launchCount++;
+    if (launchCount < 18) setTimeout(launchBurst, 350 + Math.random() * 400);
+  }
+
+  setTimeout(launchBurst, 200);
+
+  function drawFw() {
+    fwCtx.fillStyle = 'rgba(5,6,8,0.18)';
+    fwCtx.fillRect(0, 0, fwCanvas.width, fwCanvas.height);
+
+    fwParticles = fwParticles.filter(p => p.alpha > 0.02);
+    for (const p of fwParticles) {
+      fwCtx.globalAlpha = p.alpha;
+      fwCtx.fillStyle   = p.color;
+      fwCtx.beginPath();
+      fwCtx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      fwCtx.fill();
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vy += 0.06;
+      p.vx *= 0.98;
+      p.alpha -= p.decay;
+    }
+    fwCtx.globalAlpha = 1;
+    fwRaf = requestAnimationFrame(drawFw);
+  }
+  drawFw();
+}
+
+// ══════════════════════════════════════════
+// 7. REPLAY
+// ══════════════════════════════════════════
+document.getElementById('replayBtn').addEventListener('click', () => {
+  if (fwRaf) cancelAnimationFrame(fwRaf);
+  fwParticles = [];
+  if (fwCtx) fwCtx.clearRect(0, 0, fwCanvas.width, fwCanvas.height);
+
+  // Reset all typed text
+  ['bl1','bl2','bl3','bl4','bl5'].forEach(id => {
+    const el = document.getElementById(id);
+    el.textContent = '';
+    el.className = 'boot-line';
+  });
+  document.getElementById('boot-bar-wrap').style.display = 'none';
+  document.getElementById('bootBar').style.width = '0%';
+  document.getElementById('loreNextBtn').style.display = 'none';
+  document.getElementById('loreCursor').style.display = 'block';
+
+  goTo('boot');
+  runBoot();
+});
+
+// ══════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+  goTo('boot');
+  runBoot();
+});
